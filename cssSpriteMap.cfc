@@ -29,6 +29,170 @@
         </cfscript>
     </cffunction>
 
+
+    <cffunction name="saveCSS" returntype="boolean" access="public" output="false">
+        <cfargument name="filePath" required="yes" type="string">
+        <cfargument name="srcString" required="yes" type="string">
+        <cfscript>
+        var tempUnique='###getTickCount()#';
+        </cfscript>
+        <cfif arguments.filePath NEQ "">
+            <cftry>
+                <cffile addnewline="no" action="write" nameconflict="overwrite" charset="utf-8" file="#arguments.filePath##tempUnique#" output="#arguments.srcString#">
+                <cfif compare(arguments.filePath&tempUnique , arguments.filePath) NEQ 0>
+                    <cflock name="cssSpriteMap|#arguments.filePath#" timeout="60" type="exclusive">
+                        <cffile action="rename" nameconflict="overwrite" source="#arguments.filePath##tempUnique#" destination="#arguments.filePath#">
+                    </cflock>
+                </cfif>
+                <cfcatch type="any">
+					<cfscript>
+                    throw('Failed to save css. arguments.filePath=#arguments.path#',true);
+                    </cfscript>
+            	</cfcatch>
+            </cftry>
+        <cfelse>
+            <cfscript>
+            throw('Failed to save css. arguments.filePath=#arguments.path#',true);
+            </cfscript>
+        </cfif>
+        <cfreturn true>
+    </cffunction>
+    
+	<cffunction name="setCSSRoot" access="public" output="no">
+    	<cfargument name="rootPath" type="string" required="yes">
+    	<cfargument name="rootRelativePath" type="string" required="yes">
+        <cfscript>
+		variables.cssRootPath=arguments.rootPath;
+		variables.cssRootRelativePath=arguments.rootRelativePath;
+		</cfscript>
+    </cffunction>
+    
+	<cffunction name="loadCSSFile" access="public" output="no">
+    	<cfargument name="cssFilePath" type="string" required="yes">
+    	<cfargument name="cssRootRelativePath" type="string" required="yes">
+    	<cfscript>
+		var css=0;
+		variables.cssRootPath=getdirectoryfrompath(arguments.cssFilePath);
+		if(arguments.cssFilePath  EQ  ""  OR  replace(arguments.cssFilePath, "./", "", "all") NEQ arguments.cssFilePath  OR  mid(arguments.cssFilePath, len(arguments.cssFilePath)-3,4) NEQ ".css" or not fileexists(arguments.cssFilePath)){
+			throw("All CSS file in the array must end with .css and be an absolute path.","all");
+		}
+		local.fileHandle=fileopen(arguments.cssFilePath, "read", "utf-8");
+		css=replace(replace(fileread(local.fileHandle), chr(10), " ", "all"), chr(13),"", "all");
+		fileclose(local.fileHandle);
+		return css;
+		</cfscript>
+    </cffunction>
+    
+    
+    <!--- cssSpriteMap.loadCSSFileArray([{absolutePath:"",relativePath:""}]; --->
+    <cffunction name="loadCSSFileArray" output="no" access="public">
+    	<cfargument name="arrCSSFile" type="array" required="yes">
+        <cfscript>
+		var local={};
+		var e=0;
+		var a=0;
+		local.arrCSS=[];
+		for(local.i=1;local.i LTE arraylen(arguments.arrCSSFile);local.i++){
+			a=arguments.arrCSSFile[local.i].absolutePath;
+			if(a  EQ  ""  OR  replace(a, "./", "", "all") NEQ a  OR  mid(a, len(a)-3,4) NEQ ".css" or not fileexists(a)){
+				throw("All CSS file in the array must end with .css and be an absolute path.","all");
+			}
+			try{
+				arrayappend(local.arrCSS, '@@z@@'&a&'~'&arguments.arrCSSFile[local.i].relativePath&'@'&fileread(a, this.charset));
+			}catch(Any e){
+				throw("CSS File doesn't exist: "&a, "custom");
+			}
+		}
+		return arraytolist(local.arrCSS, chr(10));
+		</cfscript>
+    </cffunction>
+    
+	<cffunction name="convertAndReturnCSS" access="public" returntype="struct" output="yes">
+    	<cfargument name="css" type="string" required="yes">
+    	<cfscript>
+		var local={};
+		if(not structkeyexists(variables,'initRun')){
+			this.init();
+		}
+		if(not structkeyexists(variables,'cssRootPath') or variables.cssRootPath EQ ""){
+			throw("cssSpriteMap.setCSSRoot() must be called before cssSpriteMap.convertAndReturnCSS()", "custom");
+		}
+		if(trim(arguments.css) EQ ""){
+			throw("this.css must be set before calling convert.", "custom");
+		}
+		variables.arrAlias=structkeyarray(this.aliasStruct);
+		arraysort(variables.arrAlias, "text", "desc");
+		local.arrCSS=variables.parseCSSString(arguments.css);
+		local.rs=variables.getImagesFromParsedCSS(local.arrCSS);
+		local.rs=variables.generateSpriteMaps(rs);
+		local.s=variables.rebuildCSS(local.arrCSS, local.rs);
+		return { arrCSS:local.arrCSS, cssStruct:local.rs, css:local.s};
+		</cfscript>
+    </cffunction>
+
+
+
+	<cffunction name="displayCSS" access="public" output="yes">
+    	<cfargument name="arrCSS" type="array" required="yes">
+    	<cfargument name="imageStruct" type="struct" required="yes">
+    	<cfscript>
+		local.html="<h2>Use the CSS class names below in your code</h2>";
+		local.css="";
+		local.css2="";
+		local.cssPrefix="sn-";
+		local.count=0;
+		for(local.key=1;local.key LTE arraylen(arguments.arrCSS);local.key++){
+			local.curValue=arguments.arrCSS[local.key];
+			if(local.curValue.type  EQ  "rules"){
+				for(local.i=1;local.i LTE arraylen(local.curValue.arrProperty);local.i++){
+					local.c=local.curValue.arrProperty[local.i];
+					if(local.c.name  EQ  "background-image"){
+						if(this.disableSpritemap EQ 0){
+							local.match=false;
+							if(structkeyexists(local.c, 'imageIndex') and local.c.imageIndex GT 0){
+								local.match=true;
+								local.curSpriteFile=this.jpegRootRelativePath;
+								local.ts=arguments.imageStruct.imageStruct[arguments.imageStruct.arrLookupImage[local.c.imageIndex]];
+							}else if(structkeyexists(local.c, 'transparentIndex') and local.c.transparentIndex GT 0){
+								local.match=true;
+								local.curSpriteFile=this.pngRootRelativePath;
+								local.ts=arguments.imageStruct.imageTransparentStruct[arguments.imageStruct.arrLookupTransparent[local.c.transparentIndex]];
+							}
+							if(local.match){
+								if(local.ts.selector NEQ ""){
+									local.t9=listtoarray(local.ts.selector, "{");
+									local.className=local.t9[1];
+								}else{
+									local.className=local.cssPrefix&local.count;//"";
+								}
+								local.count++;
+								local.tempClass="."&local.cssPrefix&local.count;
+								local.c444=' class="'&local.cssPrefix&local.count&'"';
+								local.html&='<h2>'&local.className&'</h2> <div style="width:'&local.ts.width&'px; height:'&local.ts.height&'px;  margin-bottom:10px; clear:both;" '&local.c444&'></div><hr />';
+								local.css&=""&local.className&"{width:"&local.ts.width&"px; height:"&local.ts.height&"px; background-image:url("&local.curSpriteFile&"); background-position:"&(local.ts.left-this.spritePad)&"px "&(local.ts.top-this.spritePad)&"px; background-repeat:no-repeat; } "&chr(10);
+								local.css2&=""&local.tempClass&"{width:"&local.ts.width&"px; height:"&local.ts.height&"px; background-image:url("&local.curSpriteFile&"); background-position:"&(local.ts.left-this.spritePad)&"px "&(local.ts.top-this.spritePad)&"px; background-repeat:no-repeat; } "&chr(10);
+							}
+							
+						}
+					}
+				}
+			}
+		}
+		writeoutput('<html><head><title>CSS Sprite Map Generator</title><style type="text/css">'&local.css2&'</style></head><body style="margin:10px;"><h1>CSS Sprite Map Generator</h1>');
+		if(local.count){
+			writeoutput('<p>Sprite map image(s) were created from all images with "background-repeat:no-repeat" or "background:##FFF url(image.jpg) no-repeat" shorthand in the CSS. To prevent an image from being in the sprite map, use "background-repeat:no-repeat !important;".</p>');
+			writeoutput('<div style="width:100%; "><h2>JPEG Sprite Map</h2><img src="'&this.jpegRootRelativePath&'" style="border:2px solid ##999;" alt="JPEG Sprite Map" /></div>');
+			writeoutput('<div style="width:100%; "><h2>PNG Sprite Map (Preserves Alpha Channel Transparency)</h2><img src="'&this.pngRootRelativePath&'" style="border:2px solid ##999;" alt="PNG Sprite Map" /></div>');
+			writeoutput('<h2>CSS Styles Generated</h2> <div style="width:100%; "><textarea name="d11" id="d11" cols="90" rows="10">'&local.css&'</textarea><br />'&local.html&'</div>');
+		}else{
+			writeoutput('<p>No images could be converted into a css sprite map.</p>');	
+		}
+		writeoutput('</body></html>');
+		</cfscript>
+    </cffunction>
+    
+    <!--- private methods below --->
+    
     <cffunction name="forceAbsoluteDir" access="private" output="yes" returntype="string">
         <cfargument name="path" type="string" required="yes">
         <cfargument name="filePath" type="string" required="yes">
@@ -672,165 +836,8 @@
 		</cfscript>
     </cffunction>
     
-	<cffunction name="displayCSS" access="public" output="yes">
-    	<cfargument name="arrCSS" type="array" required="yes">
-    	<cfargument name="imageStruct" type="struct" required="yes">
-    	<cfscript>
-		local.html="<h2>Use the CSS class names below in your code</h2>";
-		local.css="";
-		local.css2="";
-		local.cssPrefix="sn-";
-		local.count=0;
-		for(local.key=1;local.key LTE arraylen(arguments.arrCSS);local.key++){
-			local.curValue=arguments.arrCSS[local.key];
-			if(local.curValue.type  EQ  "rules"){
-				for(local.i=1;local.i LTE arraylen(local.curValue.arrProperty);local.i++){
-					local.c=local.curValue.arrProperty[local.i];
-					if(local.c.name  EQ  "background-image"){
-						if(this.disableSpritemap EQ 0){
-							local.match=false;
-							if(structkeyexists(local.c, 'imageIndex') and local.c.imageIndex GT 0){
-								local.match=true;
-								local.curSpriteFile=this.jpegRootRelativePath;
-								local.ts=arguments.imageStruct.imageStruct[arguments.imageStruct.arrLookupImage[local.c.imageIndex]];
-							}else if(structkeyexists(local.c, 'transparentIndex') and local.c.transparentIndex GT 0){
-								local.match=true;
-								local.curSpriteFile=this.pngRootRelativePath;
-								local.ts=arguments.imageStruct.imageTransparentStruct[arguments.imageStruct.arrLookupTransparent[local.c.transparentIndex]];
-							}
-							if(local.match){
-								if(local.ts.selector NEQ ""){
-									local.t9=listtoarray(local.ts.selector, "{");
-									local.className=local.t9[1];
-								}else{
-									local.className=local.cssPrefix&local.count;//"";
-								}
-								local.count++;
-								local.tempClass="."&local.cssPrefix&local.count;
-								local.c444=' class="'&local.cssPrefix&local.count&'"';
-								local.html&='<h2>'&local.className&'</h2> <div style="width:'&local.ts.width&'px; height:'&local.ts.height&'px;  margin-bottom:10px; clear:both;" '&local.c444&'></div><hr />';
-								local.css&=""&local.className&"{width:"&local.ts.width&"px; height:"&local.ts.height&"px; background-image:url("&local.curSpriteFile&"); background-position:"&(local.ts.left-this.spritePad)&"px "&(local.ts.top-this.spritePad)&"px; background-repeat:no-repeat; } "&chr(10);
-								local.css2&=""&local.tempClass&"{width:"&local.ts.width&"px; height:"&local.ts.height&"px; background-image:url("&local.curSpriteFile&"); background-position:"&(local.ts.left-this.spritePad)&"px "&(local.ts.top-this.spritePad)&"px; background-repeat:no-repeat; } "&chr(10);
-							}
-							
-						}
-					}
-				}
-			}
-		}
-		writeoutput('<html><head><title>CSS Sprite Map Generator</title><style type="text/css">'&local.css2&'</style></head><body style="margin:10px;"><h1>CSS Sprite Map Generator</h1>');
-		if(local.count){
-			writeoutput('<p>Sprite map image(s) were created from all images with "background-repeat:no-repeat" or "background:##FFF url(image.jpg) no-repeat" shorthand in the CSS. To prevent an image from being in the sprite map, use "background-repeat:no-repeat !important;".</p>');
-			writeoutput('<div style="width:100%; "><h2>JPEG Sprite Map</h2><img src="'&this.jpegRootRelativePath&'" style="border:2px solid ##999;" alt="JPEG Sprite Map" /></div>');
-			writeoutput('<div style="width:100%; "><h2>PNG Sprite Map (Preserves Alpha Channel Transparency)</h2><img src="'&this.pngRootRelativePath&'" style="border:2px solid ##999;" alt="PNG Sprite Map" /></div>');
-			writeoutput('<h2>CSS Styles Generated</h2> <div style="width:100%; "><textarea name="d11" id="d11" cols="90" rows="10">'&local.css&'</textarea><br />'&local.html&'</div>');
-		}else{
-			writeoutput('<p>No images could be converted into a css sprite map.</p>');	
-		}
-		writeoutput('</body></html>');
-		</cfscript>
-    </cffunction>
     
     
-    <cffunction name="saveCSS" returntype="boolean" access="public" output="false">
-        <cfargument name="filePath" required="yes" type="string">
-        <cfargument name="srcString" required="yes" type="string">
-        <cfscript>
-        var tempUnique='###getTickCount()#';
-        </cfscript>
-        <cfif arguments.filePath NEQ "">
-            <cftry>
-                <cffile addnewline="no" action="write" nameconflict="overwrite" charset="utf-8" file="#arguments.filePath##tempUnique#" output="#arguments.srcString#">
-                <cfif compare(arguments.filePath&tempUnique , arguments.filePath) NEQ 0>
-                    <cflock name="cssSpriteMap|#arguments.filePath#" timeout="60" type="exclusive">
-                        <cffile action="rename" nameconflict="overwrite" source="#arguments.filePath##tempUnique#" destination="#arguments.filePath#">
-                    </cflock>
-                </cfif>
-                <cfcatch type="any">
-					<cfscript>
-                    throw('Failed to save css. arguments.filePath=#arguments.path#',true);
-                    </cfscript>
-            	</cfcatch>
-            </cftry>
-        <cfelse>
-            <cfscript>
-            throw('Failed to save css. arguments.filePath=#arguments.path#',true);
-            </cfscript>
-        </cfif>
-        <cfreturn true>
-    </cffunction>
-    
-	<cffunction name="setCSSRoot" access="public" output="no">
-    	<cfargument name="rootPath" type="string" required="yes">
-    	<cfargument name="rootRelativePath" type="string" required="yes">
-        <cfscript>
-		variables.cssRootPath=arguments.rootPath;
-		variables.cssRootRelativePath=arguments.rootRelativePath;
-		</cfscript>
-    </cffunction>
-    
-	<cffunction name="loadCSSFile" access="public" output="no">
-    	<cfargument name="cssFilePath" type="string" required="yes">
-    	<cfargument name="cssRootRelativePath" type="string" required="yes">
-    	<cfscript>
-		var css=0;
-		variables.cssRootPath=getdirectoryfrompath(arguments.cssFilePath);
-		if(arguments.cssFilePath  EQ  ""  OR  replace(arguments.cssFilePath, "./", "", "all") NEQ arguments.cssFilePath  OR  mid(arguments.cssFilePath, len(arguments.cssFilePath)-3,4) NEQ ".css" or not fileexists(arguments.cssFilePath)){
-			throw("All CSS file in the array must end with .css and be an absolute path.","all");
-		}
-		local.fileHandle=fileopen(arguments.cssFilePath, "read", "utf-8");
-		css=replace(replace(fileread(local.fileHandle), chr(10), " ", "all"), chr(13),"", "all");
-		fileclose(local.fileHandle);
-		return css;
-		</cfscript>
-    </cffunction>
-    
-    
-    <!--- cssSpriteMap.loadCSSFileArray([{absolutePath:"",relativePath:""}]; --->
-    <cffunction name="loadCSSFileArray" output="no" access="public">
-    	<cfargument name="arrCSSFile" type="array" required="yes">
-        <cfscript>
-		var local={};
-		var e=0;
-		var a=0;
-		local.arrCSS=[];
-		for(local.i=1;local.i LTE arraylen(arguments.arrCSSFile);local.i++){
-			a=arguments.arrCSSFile[local.i].absolutePath;
-			if(a  EQ  ""  OR  replace(a, "./", "", "all") NEQ a  OR  mid(a, len(a)-3,4) NEQ ".css" or not fileexists(a)){
-				throw("All CSS file in the array must end with .css and be an absolute path.","all");
-			}
-			try{
-				arrayappend(local.arrCSS, '@@z@@'&a&'~'&arguments.arrCSSFile[local.i].relativePath&'@'&fileread(a, this.charset));
-			}catch(Any e){
-				throw("CSS File doesn't exist: "&a, "custom");
-			}
-		}
-		return arraytolist(local.arrCSS, chr(10));
-		</cfscript>
-    </cffunction>
-    
-	<cffunction name="convertAndReturnCSS" access="public" returntype="struct" output="yes">
-    	<cfargument name="css" type="string" required="yes">
-    	<cfscript>
-		var local={};
-		if(not structkeyexists(variables,'initRun')){
-			this.init();
-		}
-		if(not structkeyexists(variables,'cssRootPath') or variables.cssRootPath EQ ""){
-			throw("cssSpriteMap.setCSSRoot() must be called before cssSpriteMap.convertAndReturnCSS()", "custom");
-		}
-		if(trim(arguments.css) EQ ""){
-			throw("this.css must be set before calling convert.", "custom");
-		}
-		variables.arrAlias=structkeyarray(this.aliasStruct);
-		arraysort(variables.arrAlias, "text", "desc");
-		local.arrCSS=variables.parseCSSString(arguments.css);
-		local.rs=variables.getImagesFromParsedCSS(local.arrCSS);
-		local.rs=variables.generateSpriteMaps(rs);
-		local.s=variables.rebuildCSS(local.arrCSS, local.rs);
-		return { arrCSS:local.arrCSS, cssStruct:local.rs, css:local.s};
-		</cfscript>
-    </cffunction>
     
 
     </cfoutput>
