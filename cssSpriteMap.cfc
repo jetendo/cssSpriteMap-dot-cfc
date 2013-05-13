@@ -1,9 +1,7 @@
 <cfcomponent>
 	<!--- 
-	add support for css "background:"
-	add support for @import - currently it is just reinserted and the contents of the imported css file are not parsed.
-	
-	// you can avoid non-repeating background images from going in the sprite map by using background-repeat:no-repeat !important;
+	TODO: add support for parsing files included with @import - currently it is just reinserted and the contents of the imported css file are not parsed.
+	TODO: ADD TO DOCUMENTATION | you can avoid non-repeating background images from going in the sprite map by using background-repeat:no-repeat !important;
 	 --->
 	<cfoutput>
     
@@ -107,7 +105,7 @@
 		</cfscript>
     </cffunction>
     
-	<cffunction name="convertAndReturnCSS" access="public" returntype="struct" output="yes">
+	<cffunction name="convertAndReturnCSS" access="public" returntype="struct" output="no">
     	<cfargument name="css" type="string" required="yes">
     	<cfscript>
 		var local={};
@@ -193,7 +191,7 @@
     
     <!--- private methods below --->
     
-    <cffunction name="forceAbsoluteDir" access="private" output="yes" returntype="string">
+    <cffunction name="forceAbsoluteDir" access="private" output="no" returntype="string">
         <cfargument name="path" type="string" required="yes">
         <cfargument name="filePath" type="string" required="yes">
         <cfargument name="rootPath" type="string" required="yes">
@@ -579,7 +577,7 @@
 		</cfscript>
     </cffunction>
 	
-    <cffunction name="getImagesFromParsedCSS" access="private" output="yes">
+    <cffunction name="getImagesFromParsedCSS" access="private" output="no">
     	<cfargument name="arrCSS" type="array" required="yes">
     	<cfscript>
 		var local={};
