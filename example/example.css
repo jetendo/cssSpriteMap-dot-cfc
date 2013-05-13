@@ -1,0 +1,24 @@
+
+/* relative path example */
+.sh-1{background-image:url(../example/jetendo-cms-logo.jpg); background-repeat:no-repeat;}
+/* relative png example: */
+.sh-2{background-image:url(jetendo-small-logo.png); background-position:top center;background-repeat:no-repeat; background-attachment:fixed; width:100%; float:left;}
+/* will not be part of sprite map because it allow the background image to repeat. */
+.sh-3{background-image:url(jetendo-cms-logo.jpg); }
+/* root relative path */
+.sh-4{background-image:url(/cssSpriteMap-dot-cfc/example/jetendo-cms-logo.jpg);background-repeat:no-repeat;}
+/* alias example */
+.sh-5{background-image:url(/cssSpriteMapAlias/jetendo-alias.jpg);background-repeat:no-repeat;}
+/* quoted urls are allowed */
+.sh-6{background-image:url('/cssSpriteMap-dot-cfc/example/jetendo-cms-logo.jpg');background-repeat:no-repeat;}
+/* a complex multi-line selector still works */
+.sh-7, .anything,
+.else, .here, 
+#works{background-image:url(../example/jetendo-small-logo.png); background-position:top center;background-repeat:no-repeat; background-attachment:fixed; width:100%; float:left;}
+/* background shorthand syntax is automatically converted to longhand */
+.sh-8{background:#ffffff url('/cssSpriteMap-dot-cfc/example/jetendo-cms-logo.jpg') no-repeat right top;}
+
+/* @media, @import, @font-face and css comments are not parsed or modified */
+@media only screen and (min-width: 1050px) {
+}
+/*	.sh-3{ background-image:url(jetendo-small-logo.png); background-repeat:no-repeat;} */
