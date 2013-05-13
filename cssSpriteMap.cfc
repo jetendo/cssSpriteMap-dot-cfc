@@ -1,10 +1,16 @@
+<!--- 
+cssSpriteMap.cfc
+Version: 0.1.000
+
+Project Home Page: https://www.jetendo.com/manual/view/current/2.1/db-dot-cfc.html
+Github Home Page: https://github.com/jetendo/db-dot-cfc
+
+Licensed under the MIT license
+http://www.opensource.org/licenses/mit-license.php
+Copyright (c) 2013 Far Beyond Code LLC.
+ --->
 <cfcomponent>
-	<!--- 
-	TODO: add support for parsing files included with @import - currently it is just reinserted and the contents of the imported css file are not parsed.
-	TODO: ADD TO DOCUMENTATION | you can avoid non-repeating background images from going in the sprite map by using background-repeat:no-repeat !important;
-	 --->
-	<cfoutput>
-    
+	<cfoutput> 
 	<cffunction name="init" access="public" output="no">
     	<cfargument name="config" type="struct" required="yes">
         <cfscript>
