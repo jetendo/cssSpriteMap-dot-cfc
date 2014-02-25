@@ -3,7 +3,6 @@
 - Purpose: Generate sprite images and minified CSS from multiple existing CSS files.
 - Version: 0.1.000
 - Language(s) used: ColdFusion Markup Language (CFML)
-- Project Home Page: https://www.jetendo.com/manual/view/current/2.2/cssSpriteMap-dot-cfc.html
 - GitHub Home Page: https://github.com/jetendo/cssSpriteMap-dot-cfc
 - This component is part of Jetendo CMS, https://www.jetendo.com/, but is designed to function on its own.
 
