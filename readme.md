@@ -9,7 +9,7 @@
 
 ## Usage
 
-Download the project and place the files in a web site that has CFML configured.  Read and run example.cfc?method=index to see how cssSpriteMap-dot-cfc functions.
+Download the project and place the files in a web site that has CFML configured.  Read and run example.cfc?method=index in your browser to see how cssSpriteMap-dot-cfc functions.
 
 Continue reading the source code and the online documentation on the project home page to learn more about all the options and features of cssSpriteMap-dot-cfc.
 
