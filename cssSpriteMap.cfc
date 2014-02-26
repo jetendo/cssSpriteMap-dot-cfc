@@ -182,7 +182,10 @@ Copyright (c) 2013 Far Beyond Code LLC.
 				}
 			}
 		}
-		writeoutput('<html><head><title>CSS Sprite Map Generator</title><style type="text/css">'&local.css2&'</style></head><body style="margin:10px;"><h1>CSS Sprite Map Generator</h1>');
+		writeoutput('<!--[if lt IE 7]><html class="no-js lt-ie9 lt-ie8 lt-ie7"> <![endif]-->
+<!--[if IE 7]>	<html class="no-js lt-ie9 lt-ie8"> <![endif]-->
+<!--[if IE 8]>	<html class="no-js lt-ie9"> <![endif]-->
+<!--[if gt IE 8]><!--><html class="no-js"> <!--<![endif]--><head><title>CSS Sprite Map Generator</title><style type="text/css">'&local.css2&'</style></head><body style="margin:10px;"><h1>CSS Sprite Map Generator</h1>');
 		if(local.count){
 			writeoutput('<p>Sprite map image(s) were created from all images with "background-repeat:no-repeat" or "background:##FFF url(image.jpg) no-repeat" shorthand in the CSS. To prevent an image from being in the sprite map, use "background-repeat:no-repeat !important;".</p>');
 			writeoutput('<div style="width:100%; "><h2>JPEG Sprite Map</h2><img src="'&this.jpegRootRelativePath&'" style="border:2px solid ##999;" alt="JPEG Sprite Map" /></div>');
@@ -551,7 +554,19 @@ Copyright (c) 2013 Far Beyond Code LLC.
                     for(local.i2=1;local.i2 LTE arraylen(local.arrP);local.i2++){
                         if(trim(local.arrP[local.i2]) NEQ ""){
                             local.c=listtoarray(local.arrP[local.i2],":");
-                            if(arraylen(local.c)  EQ  3){
+			    
+                            if(arraylen(local.c)  GT  3){
+				    local.key=local.c[local.i2];
+				local.arrTemp=ArrayNew(1);
+				    arrayDeleteAt(local.c, 1);
+				arrayAppend(local.arrTemp, $key);
+				local.arrTemp(local.arrTemp, arrayToList(local.c, ":"));
+				    if(local.arrTemp[2] CONTAINS "data:image/"){
+					if(arrayLen(local.arrP) GTE local.i2+1 and left(local.c[local.i2+1], 7) EQ "base64,"){
+						local.arrTemp[2]&=";"&local.c[local.i2+1];
+						local.i2++;
+					}
+				    }
                                 local.c=[local.c[1], trim(local.c[1]).trim(local.c[2])];
                             }
                             if(arraylen(local.c)  EQ  2){

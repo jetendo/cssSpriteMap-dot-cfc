@@ -45,7 +45,7 @@
 
 		local.cssSpriteMap.setCSSRoot(local.exampleDirAbs, local.relativePath&"example/");
 		//local.cssSpriteMap.aliasStruct={};
-		//this.setCSSRoot("/home/vhosts/jetendo_com/public_html/stylesheets/", "/stylesheets/");
+		//this.setCSSRoot("/opt/jetendo/sites/jetendo_com/stylesheets/", "/stylesheets/");
 		local.rs=local.cssSpriteMap.convertAndReturnCSS(local.css);
 		local.cssSpriteMap.saveCSS(local.exampleDirAbs&"cssSpriteMap.css", local.rs.css);
 		local.cssSpriteMap.displayCSS(local.rs.arrCSS, local.rs.cssStruct);
